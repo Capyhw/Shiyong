@@ -3,7 +3,7 @@ import {
   type DownloadEvent,
   type Update,
 } from "@tauri-apps/plugin-updater";
-import { relaunch } from "@tauri-apps/plugin-process";
+import { invoke } from "@tauri-apps/api/core";
 
 export type UpdatePhase =
   | "idle"
@@ -140,7 +140,7 @@ export function createUpdater(deps: UpdaterDependencies) {
 
 export const appUpdater = createUpdater({
   check: () => check({ timeout: 15_000 }),
-  relaunch,
+  relaunch: () => invoke("restart_app"),
 });
 
 export function isUpdating(phase: UpdatePhase) {

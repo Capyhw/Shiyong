@@ -11,6 +11,7 @@ fn main() {
             "show_launcher",
             "hide_launcher",
             "runtime_status",
+            "restart_app",
         ]),
     ))
     .expect("failed to build Tauri manifest");

@@ -21,6 +21,43 @@ fn ensure_host(window: &WebviewWindow) -> Result<(), String> {
         Err("网页应用不能调用宿主命令".into())
     }
 }
+#[tauri::command]
+fn restart_app(app: AppHandle, window: WebviewWindow) -> Result<(), String> {
+    if window.label() != "main" {
+        return Err("仅应用中心可以重启拾用".into());
+    }
+    #[cfg(target_os = "macos")]
+    {
+        use std::process::{Command, Stdio};
+        let executable = std::env::current_exe().map_err(|error| error.to_string())?;
+        let bundle = executable
+            .parent()
+            .filter(|path| path.file_name().is_some_and(|name| name == "MacOS"))
+            .and_then(|path| path.parent())
+            .filter(|path| path.file_name().is_some_and(|name| name == "Contents"))
+            .and_then(|path| path.parent())
+            .filter(|path| path.extension().is_some_and(|ext| ext == "app"));
+        if let Some(bundle) = bundle {
+            // Accessory 应用直接重启 Mach-O 可能没有窗口。旧进程退出后通过
+            // LaunchServices 启动完整 .app，避免单实例锁竞争并恢复正常窗口。
+            Command::new("/bin/sh")
+                .arg("-c")
+                .arg("while /bin/kill -0 \"$1\" 2>/dev/null; do /bin/sleep 0.1; done; exec /usr/bin/open -n \"$2\"")
+                .arg("shiyong-restart")
+                .arg(std::process::id().to_string())
+                .arg(bundle)
+                .stdin(Stdio::null())
+                .stdout(Stdio::null())
+                .stderr(Stdio::null())
+                .spawn()
+                .map_err(|error| format!("无法准备重启：{error}"))?;
+            app.exit(0);
+            return Ok(());
+        }
+    }
+    app.request_restart();
+    Ok(())
+}
 fn show(app: &AppHandle, label: &str) -> Result<(), String> {
     let window = app.get_webview_window(label).ok_or("窗口不存在")?;
     window.unminimize().map_err(|e| e.to_string())?;
@@ -157,7 +194,6 @@ pub fn run() {
         }))
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
-        .plugin(tauri_plugin_process::init())
         .plugin(
             tauri_plugin_global_shortcut::Builder::new()
                 .with_handler(|app, _, event| {
@@ -180,7 +216,8 @@ pub fn run() {
             show_manager,
             show_launcher,
             hide_launcher,
-            runtime_status
+            runtime_status,
+            restart_app
         ])
         .setup(|app| {
             #[cfg(target_os = "macos")]
