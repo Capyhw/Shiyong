@@ -64,7 +64,7 @@ NetSplit 已接入托管安装：从自己的 GitHub Release 下载清单与 ZIP
 
 目前仅接入 macOS arm64 的 NetSplit。新增独立应用需要客户端安装适配器，不能仅凭目录执行任意程序。卸载前调用网络恢复协议，恢复失败或取消系统授权则保留应用；用户设置保留。普通关闭 NetSplit 窗口不恢复网络。
 
-**发布依赖**：需要 NetSplit 发布带 `shiyong-macos-arm64.json` 和 ZIP 的 `0.5.0` 新版 Release，并部署 Next 目录变更，线上才能一键安装。缺少发布资产会明确报错。清单使用 Release 稳定下载入口，不消耗 GitHub REST API 的匿名查询配额。详见 [原生应用协议](docs/native-apps.md)。
+**发布依赖**：NetSplit 已发布带 `shiyong-macos-arm64.json` 和 ZIP 的 Release，正式目录 API 已接入。后续独立应用版本也需提供这些发布资产，缺少时会明确报错。清单使用 Release 稳定下载入口，不消耗 GitHub REST API 的匿名查询配额。详见 [原生应用协议](docs/native-apps.md)。
 
 远程网页自身仍需做好桌面展示模式、加载失败提示与文件导入导出兼容性，不能将通用 WebView 壳等同于所有工具已通过桌面适配。
 
