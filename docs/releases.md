@@ -29,6 +29,7 @@ Actions 也支持手动运行：输入已存在的版本标签。只重试尚未
 - 更新插件验证签名成功后才安装；仅检查不会自动安装。用户点击“下载并安装，重启拾用”后开始升级，需先保存网页工作。
 - Windows 安装器会退出应用并重启；macOS 替换 app 后主动重启。安装包与用户设置、收藏及托管应用数据分离。
 - 更新签名不是操作系统代码签名。目前尚未配置 Developer ID / Apple 公证或 Windows 代码签名。
+- macOS 目前采用完整应用包 ad-hoc 签名（`signingIdentity: "-"`），CI 运行 `codesign --verify --deep --strict` 检查。未来配置 Developer ID 时替换此签名身份。
 - macOS 请先将 app 安装到“应用程序”或其他可写位置，再使用更新；不要在只读 DMG 中升级。
 
 ## 验证边界

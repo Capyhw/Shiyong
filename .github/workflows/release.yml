@@ -61,6 +61,9 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ''
         run: pnpm desktop:build --target ${{ matrix.target }} --bundles ${{ matrix.bundles }}
+      - name: Verify macOS application signature
+        if: runner.os == 'macOS'
+        run: codesign --verify --deep --strict "src-tauri/target/${{ matrix.target }}/release/bundle/macos/拾用.app"
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.target }}
