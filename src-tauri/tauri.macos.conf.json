@@ -1,0 +1,48 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "拾用",
+        "width": 1120,
+        "height": 800,
+        "minWidth": 760,
+        "minHeight": 580,
+        "center": true,
+        "titleBarStyle": "Overlay",
+        "hiddenTitle": true,
+        "trafficLightPosition": {
+          "x": 20,
+          "y": 24
+        },
+        "windowEffects": {
+          "effects": ["liquidGlassRegular", "sidebar"],
+          "radius": 20,
+          "interactive": true
+        },
+        "backgroundColor": "#00000000"
+      },
+      {
+        "label": "launcher",
+        "title": "拾用 · 主菜单",
+        "url": "index.html?view=launcher",
+        "width": 640,
+        "height": 420,
+        "visible": false,
+        "decorations": false,
+        "resizable": false,
+        "skipTaskbar": true,
+        "alwaysOnTop": true,
+        "center": true,
+        "windowEffects": {
+          "effects": ["liquidGlassRegular", "hudWindow"],
+          "radius": 24,
+          "interactive": true
+        },
+        "backgroundColor": "#00000000",
+        "shadow": true
+      }
+    ]
+  }
+}

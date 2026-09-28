@@ -1,3 +1,5 @@
+#[cfg(target_os = "macos")]
+mod macos;
 mod native;
 use native::{native_install, native_list, native_open, native_uninstall};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -221,7 +223,20 @@ pub fn run() {
         ])
         .setup(|app| {
             #[cfg(target_os = "macos")]
-            app.set_activation_policy(tauri::ActivationPolicy::Accessory);
+            {
+                app.set_activation_policy(tauri::ActivationPolicy::Accessory);
+                for config in &app.config().app.windows {
+                    if !matches!(config.label.as_str(), "main" | "launcher") {
+                        continue;
+                    }
+                    if let (Some(window), Some(effects)) = (
+                        app.get_webview_window(&config.label),
+                        config.window_effects.clone(),
+                    ) {
+                        macos::configure_glass_content(&window, effects)?;
+                    }
+                }
+            }
             let open = MenuItem::with_id(app, "open", "应用中心", true, None::<&str>)?;
             let launcher = MenuItem::with_id(app, "launcher", "打开主菜单", true, None::<&str>)?;
             let quit = MenuItem::with_id(app, "quit", "退出拾用", true, None::<&str>)?;

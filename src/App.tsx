@@ -7,15 +7,14 @@ import {
   Star,
   Search,
   Plus,
-  ArrowUpRight,
   Trash2,
   RefreshCw,
   Moon,
   Sun,
   Globe,
-  Command,
+  List,
+  Monitor,
   ChevronRight,
-  X,
   AlertCircle,
   Check,
   Keyboard,
@@ -46,11 +45,17 @@ import { resolveMyApps } from "./preferences";
 import { useNativeApps, progressLabel } from "./useNativeApps";
 import { AppUpdate } from "./AppUpdate";
 import { appUpdater, isUpdating } from "./updater";
+import { useAppearance } from "./appearance";
 import { version } from "../package.json";
 
 const standaloneLauncher =
   new URLSearchParams(location.search).get("view") === "launcher";
 const platform = /Mac/.test(navigator.userAgent) ? "macos" : "windows";
+document.documentElement.dataset.surface =
+  desktop && platform === "macos" ? "macos" : "web";
+document.documentElement.dataset.view = standaloneLauncher
+  ? "launcher"
+  : "manager";
 const shortcutLabel = platform === "macos" ? "⌥ Space" : "Alt + Space";
 function AppIcon({ app, small = false }: { app: CatalogApp; small?: boolean }) {
   const [failed, setFailed] = useState(false);
@@ -75,8 +80,12 @@ function AppIcon({ app, small = false }: { app: CatalogApp; small?: boolean }) {
 export default function App() {
   const prefs = usePreferences();
   const { data, loading, error, refresh } = useCatalog();
-  const [page, setPage] = useState<"center" | "mine" | "settings">("center");
+  const [page, setPage] = useState<"center" | "mine" | "settings">(
+    prefs.apps.length ? "mine" : "center",
+  );
   const [query, setQuery] = useState("");
+  const [layout, setLayout] = useState<"grid" | "list">("grid");
+  const searchInput = useRef<HTMLInputElement>(null);
   const [category, setCategory] = useState("all");
   const [toast, setToast] = useState("");
   const [opening, setOpening] = useState<string | null>(null);
@@ -115,9 +124,7 @@ export default function App() {
         .includes(query.toLowerCase()),
   );
 
-  useEffect(() => {
-    document.documentElement.dataset.theme = prefs.theme;
-  }, [prefs.theme]);
+  useAppearance(prefs.theme);
   useEffect(() => {
     if (toast) {
       const timer = setTimeout(() => setToast(""), 4500);
@@ -142,6 +149,30 @@ export default function App() {
   }, []);
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
+      if (
+        (event.metaKey || event.ctrlKey) &&
+        event.key === "," &&
+        !standaloneLauncher
+      ) {
+        event.preventDefault();
+        if (!dialog.current?.open && !launcherDialog.current?.open)
+          navigate("settings");
+      }
+      if (
+        (event.metaKey || event.ctrlKey) &&
+        event.key.toLowerCase() === "f" &&
+        !standaloneLauncher
+      ) {
+        if (
+          searchInput.current &&
+          !dialog.current?.open &&
+          !launcherDialog.current?.open
+        ) {
+          event.preventDefault();
+          searchInput.current.focus();
+          searchInput.current.select();
+        }
+      }
       if (event.altKey && event.code === "Space" && !desktop) {
         event.preventDefault();
         setLauncher((old) => !old);
@@ -311,19 +342,21 @@ export default function App() {
   return (
     <div className="shell">
       <aside className="sidebar">
+        <div className="sidebar-titlebar" data-tauri-drag-region />
         <div className="brand">
           <span className="brand-icon">
             <Blocks aria-hidden="true" />
           </span>
           <div>
             <strong>拾用</strong>
-            <span>让工具，各得其用</span>
+            <span>你的随身工具箱</span>
           </div>
         </div>
         <nav aria-label="主导航">
           <button
             className={page === "center" ? "nav-item active" : "nav-item"}
             onClick={() => navigate("center")}
+            aria-current={page === "center" ? "page" : undefined}
           >
             <Compass aria-hidden="true" />
             <span>应用中心</span>
@@ -331,6 +364,7 @@ export default function App() {
           <button
             className={page === "mine" ? "nav-item active" : "nav-item"}
             onClick={() => navigate("mine")}
+            aria-current={page === "mine" ? "page" : undefined}
           >
             <LayoutGrid aria-hidden="true" />
             <span>我的应用</span>
@@ -338,7 +372,7 @@ export default function App() {
           </button>
         </nav>
         <div className="favorites-head">
-          <span>收藏列表</span>
+          <span>收藏</span>
           <Star size={13} aria-hidden="true" />
         </div>
         <div className="favorites-list">
@@ -365,6 +399,7 @@ export default function App() {
           <button
             className={page === "settings" ? "nav-item active" : "nav-item"}
             onClick={() => navigate("settings")}
+            aria-current={page === "settings" ? "page" : undefined}
           >
             <Settings aria-hidden="true" />
             <span>设置</span>
@@ -382,36 +417,42 @@ export default function App() {
         </div>
       </aside>
       <main className="main">
-        <header className="toolbar">
-          <div className="breadcrumb">
-            拾用 <ChevronRight size={14} aria-hidden="true" />{" "}
-            <span>
-              {page === "center"
-                ? "应用中心"
-                : page === "mine"
-                  ? "我的应用"
-                  : "设置"}
-            </span>
+        <header className="toolbar" data-tauri-drag-region>
+          <div className="toolbar-title" data-tauri-drag-region>
+            {page === "center"
+              ? "应用中心"
+              : page === "mine"
+                ? "我的应用"
+                : "设置"}
           </div>
           <div className="toolbar-actions">
-            <button className="launcher-trigger" onClick={() => void summon()}>
-              <Command size={15} aria-hidden="true" />
-              <span>主菜单</span>
-              <kbd>{shortcutLabel}</kbd>
-            </button>
+            {page !== "settings" && (
+              <label className="search">
+                <Search size={15} aria-hidden="true" />
+                <input
+                  ref={searchInput}
+                  aria-label="搜索应用"
+                  placeholder="搜索"
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Escape") {
+                      setQuery("");
+                      event.currentTarget.blur();
+                    }
+                  }}
+                />
+                <kbd>{platform === "macos" ? "⌘ F" : "Ctrl F"}</kbd>
+              </label>
+            )}
             <button
-              className="icon-button"
-              aria-label={
-                prefs.theme === "light" ? "切换深色外观" : "切换浅色外观"
-              }
-              onClick={() =>
-                update((old) => ({
-                  ...old,
-                  theme: old.theme === "light" ? "dark" : "light",
-                }))
-              }
+              className="launcher-trigger"
+              onClick={() => void summon()}
+              title={`打开主菜单（${shortcutLabel}）`}
             >
-              {prefs.theme === "light" ? <Moon /> : <Sun />}
+              <Search size={16} aria-hidden="true" />
+              <span>快速打开</span>
+              <kbd>{shortcutLabel}</kbd>
             </button>
           </div>
         </header>
@@ -420,16 +461,18 @@ export default function App() {
             <SettingsPage
               shortcutAvailable={shortcutAvailable}
               nativeBusy={nativeBusy}
+              theme={prefs.theme}
+              setTheme={(theme) => update((old) => ({ ...old, theme }))}
             />
           ) : (
             <>
               <div className="page-heading">
                 <div>
-                  <h1>{page === "center" ? "发现趁手的工具" : "我的应用"}</h1>
+                  <h1>{page === "center" ? "发现好工具" : "我的应用"}</h1>
                   <p>
                     {page === "center"
-                      ? "按需添加，随时打开。把工作和生活里的小事，交给好工具。"
-                      : "你的工具都在这里，收藏后也能从侧栏打开。"}
+                      ? "为日常的小事，找到顺手的应用。"
+                      : `${myApps.length} 个应用，随时为你所用。`}
                   </p>
                 </div>
                 <button
@@ -444,57 +487,6 @@ export default function App() {
                   <RefreshCw className={loading ? "spinning" : ""} />
                 </button>
               </div>
-              {page === "center" && (
-                <section className="intro">
-                  <div className="intro-copy">
-                    <span className="intro-label">
-                      <Globe size={14} aria-hidden="true" /> 轻装上阵
-                    </span>
-                    <h2>
-                      熟悉的工具，
-                      <br />
-                      独立的工作空间。
-                    </h2>
-                    <p>
-                      添加网页应用，或安装独立应用。
-                      <br />
-                      不用时移除，让工具箱保持清爽。
-                    </p>
-                    <button
-                      className="button primary"
-                      onClick={() => navigate("mine")}
-                    >
-                      查看我的应用 <ArrowUpRight size={15} aria-hidden="true" />
-                    </button>
-                  </div>
-                  <div className="intro-visual" aria-hidden="true">
-                    <div className="mini-window rear">
-                      <div className="mini-title">
-                        <i />
-                        <i />
-                        <i />
-                      </div>
-                      <div className="mini-lines">
-                        <b />
-                        <b />
-                        <b />
-                      </div>
-                    </div>
-                    <div className="mini-window front">
-                      <div className="mini-title">
-                        <i />
-                        <i />
-                        <i />
-                      </div>
-                      <span className="mini-symbol">
-                        <Blocks />
-                      </span>
-                      <span>专注于眼前这一件事</span>
-                      <div className="mini-progress" />
-                    </div>
-                  </div>
-                </section>
-              )}
               {native.error && (
                 <div className="notice" role="alert">
                   安装状态读取失败：{native.error}
@@ -543,15 +535,22 @@ export default function App() {
                       </button>
                     ))}
                 </div>
-                <label className="search">
-                  <Search size={16} aria-hidden="true" />
-                  <input
-                    aria-label="搜索应用"
-                    placeholder="搜索应用…"
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                  />
-                </label>
+                <div className="view-switch" role="group" aria-label="显示方式">
+                  <button
+                    aria-label="图标视图"
+                    aria-pressed={layout === "grid"}
+                    onClick={() => setLayout("grid")}
+                  >
+                    <LayoutGrid />
+                  </button>
+                  <button
+                    aria-label="列表视图"
+                    aria-pressed={layout === "list"}
+                    onClick={() => setLayout("list")}
+                  >
+                    <List />
+                  </button>
+                </div>
               </div>
               {loading && !data && page === "center" ? (
                 <div className="empty" role="status">
@@ -560,7 +559,9 @@ export default function App() {
                   <p>连接你的工具，让常用应用触手可及。</p>
                 </div>
               ) : visible.length ? (
-                <div className="app-grid">
+                <div
+                  className={`app-grid ${layout === "list" ? "app-list" : ""}`}
+                >
                   {visible.map((app) => {
                     const added =
                       app.type === "native"
@@ -603,7 +604,7 @@ export default function App() {
                           <p className="native-note">
                             {app.installationMode === "managed"
                               ? desktop
-                                ? "由拾用下载和安装，在独立窗口中使用。"
+                                ? "独立运行，专注使用。"
                                 : "请在拾用桌面版中安装和管理。"
                               : "此应用需前往发布页安装。"}
                           </p>
@@ -679,10 +680,7 @@ export default function App() {
                               ) : opening === app.id ? (
                                 "打开中…"
                               ) : added ? (
-                                <>
-                                  打开
-                                  <ArrowUpRight size={14} aria-hidden="true" />
-                                </>
+                                <>打开</>
                               ) : app.type === "native" ? (
                                 <>
                                   <Download size={14} aria-hidden="true" />
@@ -820,18 +818,48 @@ export default function App() {
 function SettingsPage({
   shortcutAvailable,
   nativeBusy,
+  theme,
+  setTheme,
 }: {
   shortcutAvailable: boolean;
   nativeBusy: boolean;
+  theme: Preferences["theme"];
+  setTheme: (theme: Preferences["theme"]) => void;
 }) {
   return (
     <>
       <div className="page-heading">
         <div>
-          <h1>按你的习惯使用</h1>
+          <h1>设置</h1>
           <p>让拾用成为顺手、安静的工具箱。</p>
         </div>
       </div>
+      <section className="settings-section">
+        <h2>
+          <Sun aria-hidden="true" />
+          外观
+        </h2>
+        <div className="appearance-options" role="group" aria-label="外观模式">
+          {(
+            [
+              { value: "system", label: "跟随系统", Icon: Monitor },
+              { value: "light", label: "浅色", Icon: Sun },
+              { value: "dark", label: "深色", Icon: Moon },
+            ] as const
+          ).map(({ value, label, Icon }) => (
+            <button
+              key={value}
+              aria-pressed={theme === value}
+              onClick={() => setTheme(value)}
+            >
+              <Icon aria-hidden="true" />
+              {label}
+              {theme === value && <Check aria-hidden="true" />}
+            </button>
+          ))}
+        </div>
+        <p>窗口与内容使用相同外观，跟随系统时自动切换。</p>
+      </section>
       <section className="settings-section">
         <h2>
           <Keyboard />
@@ -883,6 +911,7 @@ function Launcher({
   const [query, setQuery] = useState("");
   const [index, setIndex] = useState(0);
   const input = useRef<HTMLInputElement>(null);
+  const rows = useRef<(HTMLButtonElement | null)[]>([]);
   const results = apps
     .filter((app) =>
       `${app.name} ${app.description}`
@@ -896,28 +925,31 @@ function Launcher({
   const activeIndex = Math.min(index, Math.max(results.length - 1, 0));
   useEffect(() => {
     input.current?.focus();
-    const focus = () => input.current?.focus();
+    const focus = () => {
+      setQuery("");
+      setIndex(0);
+      input.current?.focus();
+    };
     window.addEventListener("focus", focus);
     return () => window.removeEventListener("focus", focus);
   }, []);
   useEffect(() => {
-    document
-      .getElementById(`launcher-item-${activeIndex}`)
-      ?.scrollIntoView({ block: "nearest" });
-  }, [activeIndex]);
+    rows.current[activeIndex]?.scrollIntoView({ block: "nearest" });
+  }, [activeIndex, query]);
   return (
     <div
       className="launcher"
       onKeyDown={(e) => {
+        if (e.nativeEvent.isComposing) return;
         if (e.key === "Escape") {
           e.preventDefault();
           close();
         }
-        if (e.key === "ArrowDown") {
+        if (e.target === input.current && e.key === "ArrowDown") {
           e.preventDefault();
           setIndex((activeIndex + 1) % Math.max(results.length, 1));
         }
-        if (e.key === "ArrowUp") {
+        if (e.target === input.current && e.key === "ArrowUp") {
           e.preventDefault();
           setIndex(
             (activeIndex + results.length - 1) % Math.max(results.length, 1),
@@ -925,51 +957,84 @@ function Launcher({
         }
       }}
     >
-      <div className="launcher-search">
+      <div className="launcher-search" data-tauri-drag-region>
         <Search aria-hidden="true" />
         <input
           ref={input}
           aria-label="搜索我的应用"
-          placeholder="想用点什么？"
+          role="combobox"
+          aria-autocomplete="list"
+          aria-expanded={true}
+          aria-controls="launcher-results"
+          aria-activedescendant={
+            results.length ? `launcher-item-${activeIndex}` : undefined
+          }
+          autoComplete="off"
+          spellCheck={false}
+          placeholder="搜索应用，马上开始…"
           value={query}
           onChange={(e) => {
             setQuery(e.target.value);
             setIndex(0);
           }}
           onKeyDown={(e) => {
-            if (e.key === "Enter" && results[activeIndex] && !opening) {
+            if (
+              !e.nativeEvent.isComposing &&
+              e.key === "Enter" &&
+              results[activeIndex] &&
+              !opening
+            ) {
               e.preventDefault();
               void launch(results[activeIndex]);
             }
           }}
         />
         <button className="icon-button" aria-label="关闭主菜单" onClick={close}>
-          <X />
+          <kbd>esc</kbd>
         </button>
       </div>
       <div className="launcher-label">
-        我的应用 <span>{results.length}</span>
+        {query ? "搜索结果" : "我的应用"} <span>{results.length} 个应用</span>
       </div>
-      <div className="launcher-list">
+      <div
+        className="launcher-list"
+        id="launcher-results"
+        role="listbox"
+        aria-label="应用搜索结果"
+        aria-busy={opening !== null}
+      >
         {results.length ? (
           results.map((app, i) => (
             <button
               id={`launcher-item-${i}`}
+              ref={(element) => {
+                rows.current[i] = element;
+              }}
+              role="option"
+              aria-selected={i === activeIndex}
+              tabIndex={-1}
+              onMouseDown={(event) => event.preventDefault()}
+              onMouseMove={() => setIndex(i)}
               key={app.id}
               className={`launcher-item ${i === activeIndex ? "highlight" : ""}`}
               onFocus={() => setIndex(i)}
               onClick={() => void launch(app)}
-              disabled={opening === app.id}
+              disabled={opening !== null}
             >
               <AppIcon app={app} small />
               <span>
-                <strong>{app.name}</strong>
+                <strong>
+                  {app.name}
+                  {opening === app.id && <em>打开中…</em>}
+                </strong>
                 <small>{app.description}</small>
               </span>
               {favorites.includes(app.id) && (
                 <Star size={14} aria-label="已收藏" />
               )}
-              <ArrowUpRight size={15} aria-hidden="true" />
+              <span className="launch-return" aria-hidden="true">
+                ↵
+              </span>
             </button>
           ))
         ) : (

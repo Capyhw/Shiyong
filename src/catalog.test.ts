@@ -242,3 +242,14 @@ it("旧目录地址被忽略，保留已有应用、收藏和主题", () => {
   });
   expect(parsed).not.toHaveProperty("endpoint");
 });
+
+it("外观默认跟随系统，保留旧版用户明确选择的浅色和深色", () => {
+  expect(defaults.theme).toBe("system");
+  for (const theme of ["light", "dark", "system"] as const) {
+    expect(parsePreferences({ ...defaults, theme }).theme).toBe(theme);
+  }
+  expect(parsePreferences({ apps: [], favorites: [] }).theme).toBe("system");
+  expect(parsePreferences({ ...defaults, theme: "invalid" }).theme).toBe(
+    "system",
+  );
+});

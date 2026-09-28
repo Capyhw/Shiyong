@@ -3,10 +3,7 @@
   "identifier": "host",
   "description": "只有拾用本地应用中心与主菜单可调用宿主命令；远程网页无任何系统权限。",
   "local": true,
-  "windows": [
-    "main",
-    "launcher"
-  ],
+  "windows": ["main", "launcher"],
   "permissions": [
     "allow-open-web-app",
     "allow-open-release-page",
@@ -19,6 +16,8 @@
     "allow-native-open",
     "allow-native-uninstall",
     "core:event:allow-listen",
-    "core:event:allow-unlisten"
+    "core:event:allow-unlisten",
+    "core:window:allow-start-dragging",
+    "core:window:allow-set-theme"
   ]
 }

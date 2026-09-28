@@ -3,12 +3,12 @@ import { parseApp, type CatalogApp } from "./catalog";
 export type Preferences = {
   apps: CatalogApp[];
   favorites: string[];
-  theme: "light" | "dark";
+  theme: "system" | "light" | "dark";
 };
 export const defaults: Preferences = {
   apps: [],
   favorites: [],
-  theme: "light",
+  theme: "system",
 };
 export function parsePreferences(value: unknown): Preferences {
   const data = value as Partial<Preferences>;
@@ -23,7 +23,8 @@ export function parsePreferences(value: unknown): Preferences {
     favorites: [...new Set(data.favorites)].filter((id) =>
       apps.some((app) => app.id === id),
     ),
-    theme: data.theme === "dark" ? "dark" : "light",
+    theme:
+      data.theme === "dark" || data.theme === "light" ? data.theme : "system",
   };
 }
 export function removeApp(prefs: Preferences, id: string): Preferences {
