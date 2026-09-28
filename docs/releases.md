@@ -34,12 +34,13 @@ Actions 也支持手动运行：输入已存在的版本标签。只重试尚未
 
 ## 验证边界
 
-### v0.1.3 发布前验证
+### v0.1.3 已发布版本验证
 
 - 前端 26 项测试、TypeScript 类型检查、格式检查通过；Rust 8 项测试通过，1 项依赖本地 NetSplit ZIP 样本的测试因无样本跳过。
 - Apple Silicon Mac 的 Release + DevTools 本地包已验证主窗口深浅色切换、放大 / 还原及内容自适应、快速菜单开关、搜索、方向键选择与 Esc 关闭。
 - 窗口内部截图未见圆角内容越界；自动化截图不包含桌面叠加后的完整外部阴影，未将这一项标为完整验证。旧版 macOS、Intel Mac 与 Windows 交互仍需实机覆盖。
-- 正式构建由既有 GitHub Release 工作流执行，关闭 DevTools；三平台构建与资产汇总成功后才公开 Release。
+- [GitHub Release 工作流](https://github.com/Capyhw/Shiyong/actions/runs/36430612785)的 macOS arm64 / x64、Windows x64 构建及发布任务全部成功，正式构建通过 DevTools 关闭检查；[v0.1.3](https://github.com/Capyhw/Shiyong/releases/tag/v0.1.3) 已公开，9 个预期资产齐全。
+- 下载正式资产后，用应用内置公钥验证三平台更新包签名均成功；分别篡改一个字节后均被拒绝。两个 macOS 应用包通过 `codesign --verify --deep --strict`，版本均为 0.1.3；公开 latest 更新入口与发布清单一致，包含全部三平台的 URL 与签名。
 
 ### v0.1.2 已发布版本验证
 
