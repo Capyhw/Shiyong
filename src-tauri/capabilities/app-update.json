@@ -1,0 +1,12 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "app-update",
+  "description": "仅本地应用中心可以检查、安装拾用更新并重启；主菜单和远程网页不具备此权限。",
+  "local": true,
+  "windows": ["main"],
+  "permissions": [
+    "updater:default",
+    "process:allow-restart",
+    "core:resources:allow-close"
+  ]
+}

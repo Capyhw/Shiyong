@@ -1,0 +1,24 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "host",
+  "description": "只有拾用本地应用中心与主菜单可调用宿主命令；远程网页无任何系统权限。",
+  "local": true,
+  "windows": [
+    "main",
+    "launcher"
+  ],
+  "permissions": [
+    "allow-open-web-app",
+    "allow-open-release-page",
+    "allow-show-manager",
+    "allow-show-launcher",
+    "allow-hide-launcher",
+    "allow-runtime-status",
+    "allow-native-install",
+    "allow-native-list",
+    "allow-native-open",
+    "allow-native-uninstall",
+    "core:event:allow-listen",
+    "core:event:allow-unlisten"
+  ]
+}

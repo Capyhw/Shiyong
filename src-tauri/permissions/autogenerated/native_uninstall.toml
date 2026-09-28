@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-native-uninstall"
+description = "Enables the native_uninstall command without any pre-configured scope."
+commands.allow = ["native_uninstall"]
+
+[[permission]]
+identifier = "deny-native-uninstall"
+description = "Denies the native_uninstall command without any pre-configured scope."
+commands.deny = ["native_uninstall"]
